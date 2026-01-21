@@ -6,14 +6,66 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="navbar">Student Dashboard</div>
-    <div style="text-align:center; margin-top: 20px;">
-        <p>Welcome, {{ current_user.name }}!</p>
-        <p>Your location will be updated automatically.</p>
-        <button onclick="sendLocation()">Update Location Now</button>
-        <p><a href="{{ url_for('logout') }}">Logout</a></p>
-    </div>
 
-    <script src="{{ url_for('static', filename='js/student.js') }}"></script>
+<div class="container">
+    <h2>Live Location Tracking</h2>
+    <p id="status">Requesting location permission...</p>
+
+    <button onclick="sendLocation()">Update Location Now</button>
+    <br><br>
+    <a href="{{ url_for('logout') }}">Logout</a>
+</div>
+
+<script>
+let watchId = null;
+
+function sendLocation() {
+    if (!navigator.geolocation) {
+        document.getElementById("status").innerText =
+            "Geolocation not supported by your browser.";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        function (position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            fetch("/update_location", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    latitude: latitude,
+                    longitude: longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("status").innerText =
+                    "Location updated successfully!";
+            })
+            .catch(() => {
+                document.getElementById("status").innerText =
+                    "Error sending location.";
+            });
+        },
+        function (error) {
+            document.getElementById("status").innerText =
+                "Permission denied or GPS unavailable.";
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+}
+
+// AUTO UPDATE EVERY 10 SECONDS
+watchId = setInterval(sendLocation, 10000);
+</script>
+
 </body>
 </html>

@@ -2,15 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard - Student Locations</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 80vh; width: 100%; }
+    </style>
 </head>
 <body>
-    <div class="navbar">Admin Dashboard</div>
-    <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+<div class="container">
+    <h2>Admin Dashboard - Live Student Locations</h2>
+    <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+let map = L.map('map').setView([20.5937, 78.9629], 5); // Default India center
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+}).addTo(map);
+
+let markers = {};
+
+function fetchLocations() {
+    fetch('/student_locations')
+        .then(response => response.json())
+        .then(data => {
+            // Remove old markers
+            for (let key in markers) {
+                map.removeLayer(markers[key]);
+            }
+            markers = {};
+
+            // Add new markers
+            data.forEach(student => {
+                let marker = L.marker([student.lat, student.lng])
+                    .addTo(map)
+                    .bindPopup(`<b>${student.name}</b><br>${student.mobile}`);
+                markers[student.mobile] = marker;
+            });
+        })
+        .catch(err => console.error(err));
+}
+
+// Initial fetch
+fetchLocations();
+
+// Auto-refresh every 10 seconds
+setInterval(fetchLocations, 10000);
+</script>
+
 </body>
 </html>
